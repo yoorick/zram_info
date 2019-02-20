@@ -8,15 +8,17 @@ function to_mib() {
     echo "$(( size_in_bytes / (1024 * 1024) ))"
 }
 
-devices=$( ls /sys/block/ | grep zram )
-
 echo 'Device: Compressed Size / Original Size / Max Size   (Compression Ratio)'
 
-for i in ${devices} ; do
+for i in /sys/block/zram* ; do
 
-    compr=$(< /sys/block/${i}/compr_data_size )
-    orig=$(< /sys/block/${i}/orig_data_size )
-    max=$(< /sys/block/${i}/disksize )
+    if [[ ! -e "${i}" ]]; then
+        continue
+    fi
+
+    compr=$(< ${i}/compr_data_size )
+    orig=$(< ${i}/orig_data_size )
+    max=$(< ${i}/disksize )
 
     (( sum_compr += compr ))
     (( sum_orig += orig ))
@@ -27,7 +29,9 @@ for i in ${devices} ; do
 
     (( orig > 0 )) && ratio=$(( 100 * compr / orig )) || ratio='N/A'
 
-    echo "${i}: ${compr_mib} MiB / ${orig_mib} MiB / ${max_mib} MiB   (${ratio} %)";
+    device_name=$( basename "${i}")
+
+    echo "${device_name}: ${compr_mib} MiB / ${orig_mib} MiB / ${max_mib} MiB   (${ratio} %)";
 
 done
 
